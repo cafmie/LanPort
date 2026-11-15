@@ -1,0 +1,61 @@
+name: windows-portable
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package + PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[build]"
+
+      - name: Build LanPort.exe
+        run: python -m PyInstaller --noconfirm --clean lanport.spec
+
+      - name: Stage portable ZIP contents
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path portable | Out-Null
+          Copy-Item dist\LanPort.exe portable\LanPort.exe
+          Copy-Item run-handheld.bat portable\run-handheld.bat
+          @"
+          LanPort portable (handheld / sub-PC)
+          ====================================
+
+          Python is NOT required on the handheld.
+
+          1. Unzip this folder anywhere (e.g. Desktop\LanPort).
+          2. Double-click run-handheld.bat  (or LanPort.exe --role handheld --name Ally).
+          3. Open http://127.0.0.1:8787/ if the browser does not open.
+
+          Main PC still uses setup.bat / run-main.bat with Python installed.
+
+          Artifact: GitHub Actions → workflow "windows-portable" →
+          LanPort-windows-portable.zip
+          Attach that ZIP (or LanPort.exe) to a GitHub Release when publishing.
+          "@ | Set-Content -Encoding utf8 portable\README-portable.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LanPort-windows-portable
+          path: portable/
+          if-no-files-found: error

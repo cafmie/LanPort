@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any, Optional
 
@@ -17,6 +18,20 @@ from .models import DeviceRole, GameProfile
 from .registry import Registry
 from .transfer import TransferHub, peer_reachable, receive_game_archive, receive_saves_archive
 from .verify import format_bytes, verify_all, verify_game
+
+
+def _resolve_web_dir() -> Path:
+    """Locate bundled UI assets for source installs and frozen (PyInstaller) builds."""
+    if getattr(sys, "frozen", False):
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            frozen = Path(meipass) / "pc_transfer" / "web"
+            if frozen.exists():
+                return frozen
+    web_dir = Path(__file__).resolve().parent / "web"
+    if web_dir.exists():
+        return web_dir
+    return Path(__file__).resolve().parents[2] / "web"
 
 
 class SettingsUpdate(BaseModel):
@@ -69,10 +84,7 @@ def create_app(registry: Optional[Registry] = None) -> FastAPI:
     app.state.discovery = discovery
     app.state.hub = hub
 
-    web_dir = Path(__file__).resolve().parent / "web"
-    if not web_dir.exists():
-        # repo-root layout fallback (web/)
-        web_dir = Path(__file__).resolve().parents[2] / "web"
+    web_dir = _resolve_web_dir()
 
     @app.get("/api/health")
     def health() -> dict:
