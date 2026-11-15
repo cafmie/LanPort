@@ -91,10 +91,12 @@ Data defaults to `%LOCALAPPDATA%\PCTransfer` on Windows, or `~/.local/share/pc-t
 ## Typical flow
 
 1. Start the app on both PCs (main: `run-main.bat`, handheld: `run-handheld.bat` + exe).
-2. Open **Pair** — peers should appear within a few seconds (or add a manual IP).
-3. On each PC, open **Games** → **Add game** and pick the install folder + save folder.
-4. On **Transfer**, choose the game + peer → **Send game ZIP**, then **Sync saves**.
-5. Open **Verify** to confirm paths exist and review size / last modified.
+2. On the first screen, pick **ホスト（メイン）** or **サブ（ハンディ）** (D-pad + **A**). Last choice is remembered; use **役割を変更** to switch.
+3. **Host:** the Pair screen shows this PC’s **LAN IP** (large) plus HTTP/discovery ports — copy the IP for the sub if needed.
+4. **Sub:** peers auto-appear, or enter the host LAN IP under Manual connect.
+5. On each PC, open **Games** → **Add game** and pick the install folder + save folder.
+6. On **Transfer**, choose the game + peer → **Send game ZIP**, then **Sync saves**.
+7. Open **Verify** to confirm paths exist and review size / last modified.
 
 Save sync policy:
 
@@ -106,8 +108,8 @@ Save sync policy:
 
 | Input | Action |
 |-------|--------|
-| D-pad / Left stick | Move focus |
-| **A** (South) | Confirm / activate |
+| D-pad / Left stick | Move focus (role picker + tabs) |
+| **A** (South) | Confirm / activate (role pick / buttons) |
 | **B** (East) | Back / cancel form |
 | **Y** (North) | Refresh peers or run verify |
 | **X** (West) | Jump to Transfer |

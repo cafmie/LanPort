@@ -10,6 +10,7 @@ import webbrowser
 
 import uvicorn
 
+from .netinfo import primary_lan_ipv4
 from .registry import Registry
 from .server import create_app
 
@@ -55,10 +56,13 @@ def main(argv: list[str] | None = None) -> None:
 
         threading.Thread(target=_open, daemon=True).start()
 
+    lan_ip = primary_lan_ipv4()
     print(f"LanPort listening on http://{args.host}:{port}/")
+    if lan_ip:
+        print(f"LAN IP: {lan_ip}  (UI http://{lan_ip}:{port}/ · discovery UDP {registry.settings.discovery_port})")
     print(f"Device: {registry.settings.device_name} ({registry.settings.role.value})")
     print(f"Data:   {registry.data_dir}")
-    print("Controller: D-pad/Left-stick navigate · A confirm · B back · Y refresh · X verify")
+    print("Controller: role picker A confirm · D-pad navigate · B back · Y refresh · X transfer")
     uvicorn.run(app, host=args.host, port=port, log_level="info")
 
 
