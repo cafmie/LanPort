@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 
 from .discovery import DiscoveryService
 from .models import DeviceRole, GameProfile
+from .netinfo import list_lan_ipv4, primary_lan_ipv4
 from .registry import Registry
 from .transfer import TransferHub, peer_reachable, receive_game_archive, receive_saves_archive
 from .verify import format_bytes, verify_all, verify_game
@@ -90,9 +91,30 @@ def create_app(registry: Optional[Registry] = None) -> FastAPI:
     def health() -> dict:
         return {"ok": True, "version": "0.1.0"}
 
+    def _connection_payload() -> dict:
+        settings = registry.settings
+        lan_ips = list_lan_ipv4()
+        primary = primary_lan_ipv4()
+        return {
+            "device_name": settings.device_name,
+            "role": settings.role.value,
+            "primary_lan_ip": primary,
+            "lan_ips": lan_ips,
+            "http_port": settings.http_port,
+            "discovery_port": settings.discovery_port,
+            "ui_url": f"http://{primary or '127.0.0.1'}:{settings.http_port}/",
+        }
+
     @app.get("/api/settings")
     def get_settings() -> dict:
-        return registry.settings.model_dump(mode="json")
+        payload = registry.settings.model_dump(mode="json")
+        payload["connection"] = _connection_payload()
+        return payload
+
+    @app.get("/api/connection")
+    def get_connection() -> dict:
+        """Minimal LAN pairing info for the host (main) screen."""
+        return _connection_payload()
 
     @app.put("/api/settings")
     def put_settings(body: SettingsUpdate) -> dict:
@@ -105,7 +127,9 @@ def create_app(registry: Optional[Registry] = None) -> FastAPI:
             discovery.role = body.role
         if kwargs:
             registry.update_settings(**kwargs)
-        return registry.settings.model_dump(mode="json")
+        payload = registry.settings.model_dump(mode="json")
+        payload["connection"] = _connection_payload()
+        return payload
 
     @app.get("/api/peers")
     def list_peers() -> dict:

@@ -1,6 +1,9 @@
 (() => {
+  const ROLE_STORAGE_KEY = "lanport.uiRole";
+
   const state = {
     settings: null,
+    connection: null,
     peers: [],
     games: [],
     selectedPeerId: null,
@@ -9,6 +12,8 @@
     view: "pair",
     pollTimer: null,
     padPrev: {},
+    rolePicking: true,
+    roleChosen: false,
   };
 
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -38,7 +43,123 @@
     return res.json();
   }
 
+  function roleLabel(role) {
+    return role === "handheld" ? "サブ（ハンディ）" : "ホスト（メイン）";
+  }
+
+  function rememberedRole() {
+    try {
+      const local = localStorage.getItem(ROLE_STORAGE_KEY);
+      if (local === "main" || local === "handheld") return local;
+    } catch (_) { /* ignore */ }
+    return state.settings?.role || "main";
+  }
+
+  function rememberRole(role) {
+    try {
+      localStorage.setItem(ROLE_STORAGE_KEY, role);
+    } catch (_) { /* ignore */ }
+  }
+
+  function showRoleGate(preferredRole) {
+    state.rolePicking = true;
+    document.body.classList.add("role-picking");
+    const gate = $("#role-gate");
+    gate.hidden = false;
+    $("#focus-hint").textContent = "A 決定 · ←→ 選択";
+    const preferred = preferredRole || rememberedRole();
+    $$(".role-card").forEach((btn) => {
+      btn.classList.toggle("is-preferred", btn.dataset.role === preferred);
+    });
+    rebuildFocus();
+    const idx = state.focusables.findIndex((el) => el.dataset.role === preferred);
+    focusAt(idx >= 0 ? idx : 0);
+  }
+
+  function hideRoleGate() {
+    state.rolePicking = false;
+    document.body.classList.remove("role-picking");
+    $("#role-gate").hidden = true;
+    $("#focus-hint").textContent = "A Confirm · B Back · LB/RB Tabs";
+  }
+
+  async function pickRole(role) {
+    rememberRole(role);
+    state.roleChosen = true;
+    try {
+      await api("/api/settings", {
+        method: "PUT",
+        body: JSON.stringify({ role }),
+      });
+      await loadSettings();
+      hideRoleGate();
+      applyRoleUi();
+      showView("pair");
+      toast(role === "main" ? "ホスト（メイン）で開始" : "サブ（ハンディ）で開始");
+    } catch (err) {
+      toast(String(err.message || err));
+    }
+  }
+
+  function applyRoleUi() {
+    const role = state.settings?.role || "main";
+    const isHost = role === "main";
+    $("#host-panel")?.classList.toggle("is-hidden", !isHost);
+    $("#sub-hint")?.classList.toggle("is-hidden", isHost);
+    if (isHost) {
+      $("#pair-heading").textContent = "Peers on this LAN";
+      $("#pair-lede").textContent = "サブが接続するとここに表示されます。必要なら手動でも追加できます。";
+      renderHostConnection();
+    } else {
+      $("#pair-heading").textContent = "ホストを探す";
+      $("#pair-lede").textContent = "ホストのLAN IPが分かれば下の Manual connect に入力。自動検出も数秒ごとに更新されます。";
+    }
+  }
+
+  function renderHostConnection() {
+    const c = state.connection || state.settings?.connection || {};
+    const ip = c.primary_lan_ip || "（取得できません）";
+    $("#host-ip").textContent = ip;
+    $("#host-http-port").textContent = String(c.http_port ?? state.settings?.http_port ?? 8787);
+    $("#host-discovery-port").textContent = String(c.discovery_port ?? state.settings?.discovery_port ?? 8788);
+    $("#host-ui-url").textContent = c.ui_url || `http://${c.primary_lan_ip || "127.0.0.1"}:${c.http_port || 8787}/`;
+    const extras = (c.lan_ips || []).filter((x) => x && x !== c.primary_lan_ip);
+    $("#host-extra-ips").textContent = extras.length
+      ? `他のIP: ${extras.join(", ")}`
+      : "";
+  }
+
+  async function loadConnection() {
+    state.connection = await api("/api/connection");
+    if (state.settings) state.settings.connection = state.connection;
+    renderHostConnection();
+  }
+
+  async function copyHostIp() {
+    const ip = state.connection?.primary_lan_ip || state.settings?.connection?.primary_lan_ip;
+    if (!ip) {
+      toast("LAN IP がありません");
+      return;
+    }
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(ip);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = ip;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+      }
+      toast(`コピーしました: ${ip}`);
+    } catch (_) {
+      toast(`コピー失敗 — IP: ${ip}`);
+    }
+  }
+
   function showView(name) {
+    if (state.rolePicking) return;
     state.view = name;
     $$(".view").forEach((v) => v.classList.toggle("is-visible", v.id === `view-${name}`));
     $$(".tab").forEach((t) => t.classList.toggle("is-active", t.dataset.view === name));
@@ -46,6 +167,13 @@
   }
 
   function rebuildFocus() {
+    if (state.rolePicking) {
+      state.focusables = $$(".role-gate .focusable").filter((el) => !el.disabled);
+      if (!state.focusables.length) return;
+      if (state.focusIndex >= state.focusables.length) state.focusIndex = 0;
+      focusAt(state.focusIndex);
+      return;
+    }
     const visible = $(".view.is-visible");
     const tabs = $$(".tab");
     const inView = visible ? $$(".focusable", visible).filter((el) => !el.disabled && el.offsetParent !== null) : [];
@@ -80,6 +208,7 @@
   }
 
   function goBack() {
+    if (state.rolePicking) return;
     const form = $("#game-form");
     if (form && !form.classList.contains("is-hidden") && state.view === "games") {
       form.classList.add("is-hidden");
@@ -90,6 +219,7 @@
   }
 
   function cycleTab(dir) {
+    if (state.rolePicking) return;
     const order = ["pair", "games", "transfer", "verify", "help"];
     const i = order.indexOf(state.view);
     const next = order[(i + dir + order.length) % order.length];
@@ -99,14 +229,17 @@
   function renderPeers() {
     const root = $("#peer-list");
     if (!state.peers.length) {
-      root.innerHTML = `<div class="list-item meta">No peers yet. Start LanPort on the other machine, or add a manual IP.</div>`;
+      const empty = state.settings?.role === "handheld"
+        ? "ホストが見つかりません。ホスト側でLanPortを起動するか、下でIPを手動入力してください。"
+        : "No peers yet. Start LanPort on the other machine, or add a manual IP.";
+      root.innerHTML = `<div class="list-item meta">${empty}</div>`;
       rebuildFocus();
       return;
     }
     root.innerHTML = state.peers.map((p) => `
       <div class="list-item focusable" tabindex="0" role="listitem" data-action="select-peer" data-id="${p.device_id}">
         <strong>${escapeHtml(p.name)}</strong>
-        <div class="meta">${escapeHtml(p.host)}:${p.port} · <span class="badge">${escapeHtml(p.role)}</span></div>
+        <div class="meta">${escapeHtml(p.host)}:${p.port} · <span class="badge">${escapeHtml(roleLabel(p.role))}</span></div>
       </div>
     `).join("");
     fillPeerSelect();
@@ -148,7 +281,8 @@
 
   async function loadSettings() {
     state.settings = await api("/api/settings");
-    $("#device-line").textContent = `${state.settings.device_name} · ${state.settings.role} · :${state.settings.http_port}`;
+    state.connection = state.settings.connection || state.connection;
+    $("#device-line").textContent = `${state.settings.device_name} · ${roleLabel(state.settings.role)} · :${state.settings.http_port}`;
     $("#set-name").value = state.settings.device_name;
     $("#set-role").value = state.settings.role;
   }
@@ -259,7 +393,14 @@
     if (!el) return;
     const action = el.dataset.action;
     try {
-      if (action === "nav") showView(el.dataset.view);
+      if (action === "pick-role") await pickRole(el.dataset.role);
+      else if (action === "switch-role") showRoleGate(state.settings?.role);
+      else if (action === "copy-ip") await copyHostIp();
+      else if (action === "refresh-connection") {
+        await loadConnection();
+        toast("接続情報を更新");
+      }
+      else if (action === "nav") showView(el.dataset.view);
       else if (action === "refresh-peers") { await loadPeers(); toast("Peers refreshed"); }
       else if (action === "seed-demo") {
         await api("/api/demo/seed", { method: "POST", body: "{}" });
@@ -316,15 +457,19 @@
   $("#settings-form").addEventListener("submit", async (ev) => {
     ev.preventDefault();
     try {
+      const role = $("#set-role").value;
       await api("/api/settings", {
         method: "PUT",
         body: JSON.stringify({
           device_name: $("#set-name").value.trim(),
-          role: $("#set-role").value,
+          role,
         }),
       });
+      rememberRole(role);
       await loadSettings();
+      applyRoleUi();
       toast("Settings saved");
+      rebuildFocus();
     } catch (err) {
       toast(String(err.message || err));
     }
@@ -355,11 +500,11 @@
   // Keyboard
   document.addEventListener("keydown", (ev) => {
     if (ev.key === "ArrowDown" || ev.key === "ArrowRight") {
-      if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName) && ev.key === "ArrowRight") return;
+      if (!state.rolePicking && ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName) && ev.key === "ArrowRight") return;
       ev.preventDefault();
       moveFocus(1);
     } else if (ev.key === "ArrowUp" || ev.key === "ArrowLeft") {
-      if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName) && ev.key === "ArrowLeft") return;
+      if (!state.rolePicking && ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName) && ev.key === "ArrowLeft") return;
       ev.preventDefault();
       moveFocus(-1);
     } else if (ev.key === "Enter" && !["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName)) {
@@ -409,14 +554,16 @@
     // Standard mapping: 0 A, 1 B, 2 X, 3 Y, 4 LB, 5 RB
     if (edge(0)) activateFocused();
     if (edge(1)) goBack();
-    if (edge(2)) showView("transfer");
-    if (edge(3)) {
-      if (state.view === "pair") loadPeers();
-      else if (state.view === "verify") runVerify();
-      else showView("verify");
+    if (!state.rolePicking) {
+      if (edge(2)) showView("transfer");
+      if (edge(3)) {
+        if (state.view === "pair") loadPeers();
+        else if (state.view === "verify") runVerify();
+        else showView("verify");
+      }
+      if (edge(4)) cycleTab(-1);
+      if (edge(5)) cycleTab(1);
     }
-    if (edge(4)) cycleTab(-1);
-    if (edge(5)) cycleTab(1);
 
     requestAnimationFrame(pollGamepad);
   }
@@ -430,8 +577,10 @@
     await loadSettings();
     await loadPeers();
     await loadGames();
-    showView("pair");
-    setInterval(() => { loadPeers().catch(() => {}); }, 3000);
+    showRoleGate(rememberedRole());
+    setInterval(() => {
+      if (!state.rolePicking) loadPeers().catch(() => {});
+    }, 3000);
     requestAnimationFrame(pollGamepad);
   }
 

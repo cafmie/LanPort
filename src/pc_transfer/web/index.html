@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -7,7 +7,28 @@
   <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
-  <div class="shell">
+  <div id="role-gate" class="role-gate" hidden>
+    <div class="role-gate-inner">
+      <p class="role-eyebrow">LanPort</p>
+      <h1 class="role-title">このPCの役割は？</h1>
+      <p class="role-lede">ホスト（メイン）かサブ（ハンディ）かを選んでください。Aで決定。</p>
+      <div class="role-choices" role="group" aria-label="役割選択">
+        <button type="button" class="role-card focusable" id="pick-host" data-action="pick-role" data-role="main" autofocus>
+          <span class="role-card-kicker">Host</span>
+          <span class="role-card-label">ホスト（メイン）</span>
+          <span class="role-card-hint">LAN IPを表示してサブから接続してもらう</span>
+        </button>
+        <button type="button" class="role-card focusable" id="pick-sub" data-action="pick-role" data-role="handheld">
+          <span class="role-card-kicker">Sub</span>
+          <span class="role-card-label">サブ（ハンディ）</span>
+          <span class="role-card-hint">ホストを見つけて接続する</span>
+        </button>
+      </div>
+      <p class="role-foot">前回の選択は記憶されます · Bでキャンセル（ゲート表示中は無効）</p>
+    </div>
+  </div>
+
+  <div class="shell" id="app-shell">
     <header class="topbar">
       <div class="brand">
         <span class="logo" aria-hidden="true">⇄</span>
@@ -27,8 +48,36 @@
 
     <main>
       <section id="view-pair" class="view is-visible" aria-label="Pair devices">
-        <h2>Find a peer on this LAN</h2>
-        <p class="lede">Both PCs must run LanPort on the same network. Peers appear automatically.</p>
+        <div id="host-panel" class="host-panel is-hidden" aria-label="Host connection info">
+          <h2>ホスト接続情報</h2>
+          <p class="lede">サブ側でこのIPを選ぶか、手動入力してください。</p>
+          <div class="host-ip-block">
+            <span class="host-ip-label">このPCの LAN IP</span>
+            <p class="host-ip" id="host-ip">—</p>
+            <div class="toolbar host-ip-actions">
+              <button type="button" class="btn primary focusable" id="btn-copy-ip" data-action="copy-ip">IPをコピー</button>
+              <button type="button" class="btn focusable" data-action="refresh-connection">再取得</button>
+              <button type="button" class="btn focusable" data-action="switch-role">役割を変更</button>
+            </div>
+          </div>
+          <dl class="host-ports">
+            <div><dt>HTTP / 転送</dt><dd id="host-http-port">8787</dd></div>
+            <div><dt>Discovery (UDP)</dt><dd id="host-discovery-port">8788</dd></div>
+            <div><dt>UI URL</dt><dd id="host-ui-url" class="mono">—</dd></div>
+          </dl>
+          <p class="meta" id="host-extra-ips"></p>
+        </div>
+
+        <div id="sub-hint" class="sub-hint is-hidden">
+          <h2>ホストを見つけて接続</h2>
+          <p class="lede">同じLANでホスト（メイン）を起動すると、下に自動表示されます。出てこない場合はホスト画面のLAN IPを手動入力してください。</p>
+          <div class="toolbar">
+            <button type="button" class="btn focusable" data-action="switch-role">役割を変更</button>
+          </div>
+        </div>
+
+        <h2 id="pair-heading">Find a peer on this LAN</h2>
+        <p class="lede" id="pair-lede">Both PCs must run LanPort on the same network. Peers appear automatically.</p>
         <div class="toolbar">
           <button class="btn focusable" id="btn-refresh-peers" data-action="refresh-peers">Refresh peers</button>
           <button class="btn focusable" id="btn-seed-demo" data-action="seed-demo">Seed demo game</button>
@@ -36,6 +85,7 @@
         <div id="peer-list" class="list" role="list"></div>
         <form id="manual-peer-form" class="card-form">
           <h3>Manual connect</h3>
+          <p class="meta" id="manual-hint">ホストの LAN IP を入力（サブ向け）</p>
           <label>Host IP <input class="focusable" id="manual-host" name="host" placeholder="192.168.1.20" /></label>
           <label>Port <input class="focusable" id="manual-port" name="port" type="number" value="8787" /></label>
           <label>Name <input class="focusable" id="manual-name" name="name" value="Other PC" /></label>
@@ -46,8 +96,8 @@
           <label>Name <input class="focusable" id="set-name" name="device_name" /></label>
           <label>Role
             <select class="focusable" id="set-role" name="role">
-              <option value="main">Main PC</option>
-              <option value="handheld">Handheld</option>
+              <option value="main">ホスト（メイン）</option>
+              <option value="handheld">サブ（ハンディ）</option>
             </select>
           </label>
           <button class="btn focusable" type="submit">Save settings</button>
@@ -129,7 +179,7 @@
           <li><kbd>X</kbd> / <kbd>West</kbd> — open Transfer tab</li>
           <li><kbd>LB / RB</kbd> — previous / next tab</li>
         </ul>
-        <p class="lede">Keyboard: Arrow keys, Enter, Escape, Tab. Mouse still works on the main PC.</p>
+        <p class="lede">起動時はホスト／サブ選択 → Aで決定。Keyboard: Arrow keys, Enter, Escape, Tab.</p>
         <div id="pad-status" class="status-panel">No gamepad detected yet — press any button.</div>
       </section>
     </main>

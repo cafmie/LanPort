@@ -268,7 +268,173 @@ kbd {
 
 #toast { color: var(--accent); }
 
+.is-hidden { display: none !important; }
+
+.role-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background:
+    radial-gradient(900px 500px at 20% 0%, rgba(62, 207, 142, 0.18), transparent 60%),
+    radial-gradient(700px 420px at 90% 20%, rgba(122, 215, 255, 0.12), transparent 55%),
+    rgba(8, 12, 16, 0.96);
+}
+
+.role-gate[hidden] { display: none !important; }
+
+.role-gate-inner {
+  width: min(720px, 100%);
+  text-align: center;
+}
+
+.role-eyebrow {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+
+.role-title {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  letter-spacing: -0.02em;
+}
+
+.role-lede, .role-foot {
+  color: var(--muted);
+  margin: 0 auto 1.4rem;
+  max-width: 34rem;
+}
+
+.role-foot { margin-top: 1.25rem; margin-bottom: 0; font-size: 0.9rem; }
+
+.role-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.9rem;
+}
+
+.role-card {
+  appearance: none;
+  text-align: left;
+  border: 1px solid var(--line);
+  background: rgba(31, 43, 54, 0.85);
+  border-radius: 14px;
+  padding: 1.15rem 1.2rem;
+  cursor: pointer;
+  display: grid;
+  gap: 0.35rem;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+
+.role-card:hover, .role-card.is-preferred {
+  border-color: rgba(62, 207, 142, 0.55);
+  background: rgba(62, 207, 142, 0.12);
+}
+
+.role-card:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.role-card-kicker {
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.role-card-label {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  color: var(--ink);
+}
+
+.role-card-hint {
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.host-panel {
+  margin-bottom: 1.5rem;
+  padding: 1.15rem 1.2rem 1.25rem;
+  border: 1px solid rgba(62, 207, 142, 0.35);
+  border-radius: 14px;
+  background:
+    linear-gradient(160deg, rgba(62, 207, 142, 0.12), transparent 55%),
+    rgba(23, 32, 41, 0.9);
+}
+
+.host-ip-block { margin: 0.75rem 0 1rem; }
+
+.host-ip-label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.host-ip {
+  margin: 0 0 0.85rem;
+  font-family: ui-monospace, "Cascadia Mono", "Consolas", monospace;
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #d8ffe9;
+  line-height: 1.1;
+  word-break: break-all;
+}
+
+.host-ports {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.65rem;
+  margin: 0 0 0.5rem;
+}
+
+.host-ports div {
+  background: rgba(15, 20, 25, 0.55);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+}
+
+.host-ports dt {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.host-ports dd {
+  margin: 0.2rem 0 0;
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 1.05rem;
+}
+
+.mono { font-family: ui-monospace, "Cascadia Mono", monospace; font-size: 0.92rem; word-break: break-all; }
+
+.sub-hint {
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.1rem;
+  border-left: 3px solid var(--focus);
+  background: rgba(122, 215, 255, 0.06);
+  border-radius: 0 10px 10px 0;
+}
+
+body.role-picking .shell {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 @media (max-width: 720px) {
   .shell { padding: 1rem 0.85rem 5rem; }
   .logo { width: 2.5rem; height: 2.5rem; }
+  .host-ip { font-size: clamp(1.6rem, 9vw, 2.4rem); }
 }
