@@ -11,7 +11,6 @@
 #define MyAppURL "https://github.com/cafmie/LanPort"
 #define MyAppExeName "LanPort.exe"
 #define MyRoleLabel "Host"
-#define MyRoleArgs "--role main --name ""Main PC"""
 
 [Setup]
 AppId={{8F3C2A1B-6D4E-4F91-9B2A-A1B2C3D4E5F0}
@@ -53,9 +52,9 @@ Source: "..\assets\icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\packaging\README-host.txt"; DestDir: "{app}"; Flags: ignoreversion isreadme
 
 [Icons]
-Name: "{group}\LanPort (Host)"; Filename: "{app}\{#MyAppExeName}"; Parameters: {#MyRoleArgs}; IconFilename: "{app}\icon.ico"; WorkingDir: "{app}"
+Name: "{group}\LanPort (Host)"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--role main --name ""Main PC"""; IconFilename: "{app}\icon.ico"; WorkingDir: "{app}"
 Name: "{group}\Uninstall LanPort (Host)"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\LanPort (Host)"; Filename: "{app}\{#MyAppExeName}"; Parameters: {#MyRoleArgs}; IconFilename: "{app}\icon.ico"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{autodesktop}\LanPort (Host)"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--role main --name ""Main PC"""; IconFilename: "{app}\icon.ico"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Parameters: {#MyRoleArgs}; Description: "Launch LanPort (Host)"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Parameters: "--role main --name ""Main PC"""; Description: "Launch LanPort (Host)"; Flags: nowait postinstall skipifsilent

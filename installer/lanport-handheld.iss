@@ -11,7 +11,6 @@
 #define MyAppURL "https://github.com/cafmie/LanPort"
 #define MyAppExeName "LanPort.exe"
 #define MyRoleLabel "Handheld"
-#define MyRoleArgs "--role handheld --name Ally"
 
 [Setup]
 AppId={{8F3C2A1B-6D4E-4F91-9B2A-A1B2C3D4E5F1}
@@ -53,9 +52,9 @@ Source: "..\assets\icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\packaging\README-handheld.txt"; DestDir: "{app}"; Flags: ignoreversion isreadme
 
 [Icons]
-Name: "{group}\LanPort (Handheld)"; Filename: "{app}\{#MyAppExeName}"; Parameters: {#MyRoleArgs}; IconFilename: "{app}\icon.ico"; WorkingDir: "{app}"
+Name: "{group}\LanPort (Handheld)"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--role handheld --name Ally"; IconFilename: "{app}\icon.ico"; WorkingDir: "{app}"
 Name: "{group}\Uninstall LanPort (Handheld)"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\LanPort (Handheld)"; Filename: "{app}\{#MyAppExeName}"; Parameters: {#MyRoleArgs}; IconFilename: "{app}\icon.ico"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{autodesktop}\LanPort (Handheld)"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--role handheld --name Ally"; IconFilename: "{app}\icon.ico"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Parameters: {#MyRoleArgs}; Description: "Launch LanPort (Handheld)"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Parameters: "--role handheld --name Ally"; Description: "Launch LanPort (Handheld)"; Flags: nowait postinstall skipifsilent
