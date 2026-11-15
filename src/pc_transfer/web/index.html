@@ -4,12 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>LanPort</title>
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" href="/static/icon.png" sizes="350x350" />
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png" />
+  <link rel="manifest" href="/static/site.webmanifest" />
+  <meta name="theme-color" content="#0b1a14" />
   <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
   <div id="role-gate" class="role-gate" hidden>
     <div class="role-gate-inner">
-      <p class="role-eyebrow">LanPort</p>
+      <p class="role-eyebrow"><img class="role-mark" src="/static/icon.png" width="28" height="28" alt="" /> LanPort</p>
       <h1 class="role-title">このPCの役割は？</h1>
       <p class="role-lede">ホスト（メイン）かサブ（ハンディ）かを選んでください。Aで決定。</p>
       <div class="role-choices" role="group" aria-label="役割選択">
@@ -31,7 +36,7 @@
   <div class="shell" id="app-shell">
     <header class="topbar">
       <div class="brand">
-        <span class="logo" aria-hidden="true">⇄</span>
+        <img class="logo" src="/static/icon.png" width="48" height="48" alt="" />
         <div>
           <h1>LanPort</h1>
           <p class="tagline" id="device-line">LAN game + save sync</p>
