@@ -1,0 +1,21 @@
+{
+  "name": "LanPort",
+  "short_name": "LanPort",
+  "description": "LAN game + save sync between a main PC and a handheld sub PC.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1a14",
+  "theme_color": "#0b1a14",
+  "icons": [
+    {
+      "src": "/static/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/icon.png",
+      "sizes": "350x350",
+      "type": "image/png"
+    }
+  ]
+}

@@ -156,11 +156,13 @@ LanPort/
   setup.bat                 # main PC: create .venv + pip install -e .
   run-main.bat              # main PC launcher (calls setup if needed)
   run-handheld.bat          # handheld: launch LanPort.exe only (no Python)
-  lanport.spec              # PyInstaller onefile spec
+  lanport.spec              # PyInstaller onefile spec (uses assets/icon.ico)
+  assets/                   # app icon source (icon.webp) + PNG/ICO builds
   scripts/build-windows.bat # local Windows portable build
+  scripts/generate-icons.py # regenerate PNG/ICO from assets/icon.webp (Pillow)
   .github/workflows/        # windows-portable CI artifact
   src/pc_transfer/          # discovery, ZIP transfer, save sync, FastAPI app
-    web/                    # controller-first UI (HTML/CSS/JS)
+    web/                    # controller-first UI + favicon / PWA icons
   tests/
   README.md
 ```

@@ -328,6 +328,14 @@ def create_app(registry: Optional[Registry] = None) -> FastAPI:
         def index() -> FileResponse:
             return FileResponse(web_dir / "index.html")
 
+        favicon = web_dir / "favicon.ico"
+
+        @app.get("/favicon.ico")
+        def favicon_ico() -> FileResponse:
+            if not favicon.exists():
+                raise HTTPException(404, "favicon missing")
+            return FileResponse(favicon, media_type="image/x-icon")
+
         app.mount("/static", StaticFiles(directory=web_dir), name="static")
 
     return app
