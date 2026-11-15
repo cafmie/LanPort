@@ -45,6 +45,29 @@ if not exist "dist\LanPort.exe" (
 
 echo.
 echo OK: dist\LanPort.exe
-echo Copy LanPort.exe next to run-handheld.bat for the portable ZIP.
+
+where iscc >nul 2>&1
+if %ERRORLEVEL%==0 (
+  set "ISCC=iscc"
+) else if exist "%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe" (
+  set "ISCC=%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe"
+) else (
+  echo.
+  echo [skip] Inno Setup not found — installers not built.
+  echo Install Inno Setup 6, then re-run or: ISCC.exe installer\lanport-host.iss
+  echo Portable exe is ready: dist\LanPort.exe
+  exit /b 0
+)
+
+echo Building Inno Setup installers...
+if not exist "dist\installers" mkdir "dist\installers"
+"%ISCC%" /DMyAppVersion=0.5.0 installer\lanport-host.iss
+if errorlevel 1 exit /b 1
+"%ISCC%" /DMyAppVersion=0.5.0 installer\lanport-handheld.iss
+if errorlevel 1 exit /b 1
+
+echo.
+echo OK: dist\installers\LanPort-Host-Setup.exe
+echo OK: dist\installers\LanPort-Handheld-Setup.exe
 echo.
 exit /b 0

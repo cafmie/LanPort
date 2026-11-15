@@ -17,6 +17,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Resolve app version
+        id: ver
+        shell: pwsh
+        run: |
+          $v = "0.5.0"
+          if ($env:GITHUB_REF -like "refs/tags/v*") {
+            $v = $env:GITHUB_REF_NAME.TrimStart("v")
+          }
+          "version=$v" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "MyAppVersion=$v"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -30,32 +41,73 @@ jobs:
       - name: Build LanPort.exe
         run: python -m PyInstaller --noconfirm --clean lanport.spec
 
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build Host + Handheld installers
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found at $iscc" }
+          New-Item -ItemType Directory -Force -Path dist\installers | Out-Null
+          & $iscc "/DMyAppVersion=$($env:VERSION)" installer\lanport-host.iss
+          if ($LASTEXITCODE -ne 0) { throw "Host installer compile failed" }
+          & $iscc "/DMyAppVersion=$($env:VERSION)" installer\lanport-handheld.iss
+          if ($LASTEXITCODE -ne 0) { throw "Handheld installer compile failed" }
+          Get-ChildItem dist\installers
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+
       - name: Stage portable ZIP contents
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path portable | Out-Null
           Copy-Item dist\LanPort.exe portable\LanPort.exe
+          Copy-Item packaging\run-host.bat portable\run-host.bat
           Copy-Item run-handheld.bat portable\run-handheld.bat
+          Copy-Item assets\icon.ico portable\icon.ico
           @"
-          LanPort portable (handheld / sub-PC)
-          ====================================
+          LanPort portable (host + handheld)
+          ==================================
 
-          Python is NOT required on the handheld.
+          Python is NOT required.
 
-          1. Unzip this folder anywhere (e.g. Desktop\LanPort).
-          2. Double-click run-handheld.bat  (or LanPort.exe --role handheld --name Ally).
-          3. Open http://127.0.0.1:8787/ if the browser does not open.
+          Host / main PC:
+            Double-click run-host.bat
+            (or LanPort.exe --role main --name "Main PC")
 
-          Main PC still uses setup.bat / run-main.bat with Python installed.
+          Handheld / sub-PC:
+            Double-click run-handheld.bat
+            (or LanPort.exe --role handheld --name Ally)
 
-          Artifact: GitHub Actions → workflow "windows-portable" →
-          LanPort-windows-portable.zip
-          Attach that ZIP (or LanPort.exe) to a GitHub Release when publishing.
+          Open http://127.0.0.1:8787/ if the browser does not open.
+
+          Prefer the role installers when you want Start Menu / Desktop
+          shortcuts with the app icon:
+            LanPort-Host-Setup.exe
+            LanPort-Handheld-Setup.exe
+
+          Artifact: GitHub Actions → workflow "windows-portable"
+          Attach installers + this ZIP to a GitHub Release when publishing.
           "@ | Set-Content -Encoding utf8 portable\README-portable.txt
 
-      - name: Upload artifact
+      - name: Upload portable artifact
         uses: actions/upload-artifact@v4
         with:
           name: LanPort-windows-portable
           path: portable/
+          if-no-files-found: error
+
+      - name: Upload Host installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: LanPort-Host-Setup
+          path: dist/installers/LanPort-Host-Setup.exe
+          if-no-files-found: error
+
+      - name: Upload Handheld installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: LanPort-Handheld-Setup
+          path: dist/installers/LanPort-Handheld-Setup.exe
           if-no-files-found: error

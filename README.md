@@ -13,8 +13,8 @@ Desktop LAN tool for moving **game installs** and **save data** between a main W
 
 | Machine | Needs |
 |---------|--------|
-| **Main PC** | Python 3.10+ (use `setup.bat` / `run-main.bat`) |
-| **Handheld / sub-PC** | **No Python** — use the portable `LanPort.exe` ZIP |
+| **Main / host PC** | **No Python** with the Host installer (or portable ZIP). Source/`setup.bat` path still needs Python 3.10+. |
+| **Handheld / sub-PC** | **No Python** — Handheld installer or portable `LanPort.exe` ZIP |
 
 Both machines on the same LAN; allow inbound TCP/UDP on the app ports (default **8787** HTTP, **8788** discovery).
 
@@ -22,7 +22,31 @@ Both machines on the same LAN; allow inbound TCP/UDP on the app ports (default *
 
 ## Quick start (Windows)
 
-### Main PC (Python)
+### Installers (recommended)
+
+Download from a [GitHub Release](https://github.com/cafmie/LanPort/releases) or the [windows-portable](https://github.com/cafmie/LanPort/actions/workflows/windows-portable.yml) Actions artifacts:
+
+| Role | Installer | Shortcuts |
+|------|-----------|-----------|
+| Host / main | **`LanPort-Host-Setup.exe`** | Start Menu **LanPort (Host)** (+ optional Desktop), app icon |
+| Handheld / sub | **`LanPort-Handheld-Setup.exe`** | Start Menu **LanPort (Handheld)** (+ optional Desktop), app icon |
+
+Each installer ships `LanPort.exe` (Python-free), a role launcher bat, and `icon.ico`. Install under `%LOCALAPPDATA%\LanPort\…` by default (no admin required).
+
+### Portable ZIP (no installer)
+
+1. Download **`LanPort-windows-portable.zip`** from a Release or Actions.
+2. Unzip anywhere (e.g. `Desktop\LanPort`).
+3. Host: double-click **`run-host.bat`**. Handheld: **`run-handheld.bat`**.
+
+Direct exe:
+
+```text
+LanPort.exe --role main --name "Main PC"
+LanPort.exe --role handheld --name Ally
+```
+
+### Main PC (source / Python — optional)
 
 1. Install [Python 3.10+](https://www.python.org/downloads/) and enable **Add python.exe to PATH**.
 2. Clone this repo (or unzip a source release).
@@ -42,23 +66,7 @@ pip install -e .
 python -m pc_transfer --role main --name "Main PC"
 ```
 
-### Handheld / sub-PC (portable — no Python)
-
-The handheld must run **without installing Python**.
-
-1. Download **`LanPort-windows-portable`** from [GitHub Actions](https://github.com/cafmie/LanPort/actions/workflows/windows-portable.yml) (artifact on `main` / PR builds), or from a [GitHub Release](https://github.com/cafmie/LanPort/releases) once a portable ZIP / `LanPort.exe` is attached.
-2. Unzip anywhere (e.g. `Desktop\LanPort`).
-3. Double-click **`run-handheld.bat`** (launches `LanPort.exe` only — no venv, no pip).
-
-Optional name: `run-handheld.bat Ally`
-
-Direct exe:
-
-```text
-LanPort.exe --role handheld --name Ally
-```
-
-> This repository does **not** commit a prebuilt `.exe`. CI builds it on `windows-latest`. Until a Release attaches the artifact, grab it from the Actions run for the commit you want.
+> This repository does **not** commit prebuilt `.exe` / Setup binaries. CI builds them on `windows-latest`.
 
 ## Run (dev / source)
 
@@ -119,21 +127,32 @@ Keyboard: arrows, Enter, Escape. Mouse still works on the main PC.
 
 Use a browser that exposes the Gamepad API (Edge / Chrome). For a kiosk-like handheld setup, pin the Edge window fullscreen.
 
-## Build portable Windows exe (maintainers)
+## Build Windows installers + portable (maintainers)
 
-Built automatically by **`.github/workflows/windows-portable.yml`** (artifact name: `LanPort-windows-portable`).
+Built automatically by **`.github/workflows/windows-portable.yml`**. Artifacts:
 
-On a Windows machine with Python 3.10+:
+- `LanPort-Host-Setup` → `LanPort-Host-Setup.exe` (Inno Setup)
+- `LanPort-Handheld-Setup` → `LanPort-Handheld-Setup.exe` (Inno Setup)
+- `LanPort-windows-portable` → portable folder (`LanPort.exe` + role bats + icon)
+
+On a Windows machine with Python 3.10+ (and optionally [Inno Setup 6](https://jrsoftware.org/isinfo.php)):
 
 ```bat
 scripts\build-windows.bat
 ```
 
-Produces `dist\LanPort.exe`. Package it next to `run-handheld.bat` for handheld users.
+Produces `dist\LanPort.exe` and, if `ISCC.exe` is available, `dist\installers\LanPort-*-Setup.exe`.
 
-Optional extras: `pip install -e ".[build]"` then `pyinstaller --noconfirm --clean lanport.spec`.
+Manual:
 
-For the next GitHub Release, attach the Actions artifact ZIP (or `LanPort.exe`) — this change does not publish a new Release by itself.
+```bat
+pip install -e ".[build]"
+pyinstaller --noconfirm --clean lanport.spec
+"%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe" /DMyAppVersion=0.5.0 installer\lanport-host.iss
+"%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe" /DMyAppVersion=0.5.0 installer\lanport-handheld.iss
+```
+
+Scripts live under `installer\*.iss` and `packaging\`.
 
 ## Tests
 
@@ -153,14 +172,15 @@ pytest -q
 
 ```
 LanPort/
-  setup.bat                 # main PC: create .venv + pip install -e .
-  run-main.bat              # main PC launcher (calls setup if needed)
+  setup.bat / run-main.bat  # optional source path (Python venv) for main PC
   run-handheld.bat          # handheld: launch LanPort.exe only (no Python)
+  packaging/                # host launcher + installer README texts
+  installer/                # Inno Setup scripts (Host + Handheld)
   lanport.spec              # PyInstaller onefile spec (uses assets/icon.ico)
   assets/                   # app icon source (icon.webp) + PNG/ICO builds
-  scripts/build-windows.bat # local Windows portable build
+  scripts/build-windows.bat # local Windows exe + installer build
   scripts/generate-icons.py # regenerate PNG/ICO from assets/icon.webp (Pillow)
-  .github/workflows/        # windows-portable CI artifact
+  .github/workflows/        # windows-portable CI (installers + portable ZIP)
   src/pc_transfer/          # discovery, ZIP transfer, save sync, FastAPI app
     web/                    # controller-first UI + favicon / PWA icons
   tests/
@@ -178,4 +198,5 @@ These should be confirmed on real Windows hardware (main + handheld):
 - [ ] XInput controller focus in Edge/Chrome Gamepad API
 - [ ] tkinter folder picker under Windows (main / source builds)
 - [ ] Portable `LanPort.exe` on handheld without Python installed
+- [ ] Host + Handheld Setup.exe install shortcuts with app icon
 - [ ] Paths with non-ASCII characters under `%USERPROFILE%\Documents\My Games\...`
